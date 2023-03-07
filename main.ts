@@ -63,8 +63,8 @@ async function handleHttp(conn: Deno.Conn) {
     // Try opening the file
     let file;
     try {
-        const file = await Deno.open(
-            "." + filepath,
+        const file = await Deno.readFile(
+            "./PI_NY.GDP.MKTP.CD_DS2_en_csv_v2_4901850.csv",
         );
 
         const stream: ReadableStream = readableStreamFromReader(
