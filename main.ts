@@ -1,3 +1,4 @@
+import { serve } from "https://deno.land/std@0.140.0/http/server.ts";
 import { readableStreamFromReader } from "https://deno.land/std@0.140.0/streams/conversion.ts";
 
 const REGEX_ESCAPE = /(\r\n|\n|\r|\")/gm;
@@ -45,50 +46,33 @@ const csvToJSON = () => {
 };
 
 // HttpServer
-
-const server = Deno.listen({ port: 8080 });
-console.log("File server running on http://localhost:8080/");
-
-for await (const conn of server) {
-  handleHttp(conn).catch(console.error);
-}
-
-async function handleHttp(conn: Deno.Conn) {
-  const httpConn = Deno.serveHttp(conn);
-  for await (const requestEvent of httpConn) {
+async function handler(_req) {
     // Try opening the file
-    let file;
     try {
-        const file = await Deno.open(
-            "./PI_NY.GDP.MKTP.CD_DS2_en_csv_v2_4901850.csv",
-          { read: true }
-        );
+      const file = await Deno.open(
+          "./PI_NY.GDP.MKTP.CD_DS2_en_csv_v2_4901850.csv",
+        { read: true }
+      );
 
-        const fsStream: ReadableStream = readableStreamFromReader(file);
+      const fsStream: ReadableStream = readableStreamFromReader(file);
 
-        fsStream.pipeThrough(new TextDecoderStream())
-            .pipeThrough(csvToJSON())
-            .pipeTo(
-                new WritableStream({
-                    write: (data) => {
-                    console.log(data);
-                    },
-                    close: () => {},
-                }),
-            );
+      fsStream.pipeThrough(new TextDecoderStream())
+          .pipeThrough(csvToJSON())
+          .pipeTo(
+              new WritableStream({
+                  write: (data) => {
+                  console.log(data);
+                  },
+                  close: () => {},
+              }),
+          );
+      
+      // Build and send the response
+      return new Response(fsStream);
     } catch {
       // If the file cannot be opened, return a "404 Not Found" response
-      const notFoundResponse = new Response("404 Not Found", { status: 404 });
-      await requestEvent.respondWith(notFoundResponse);
-      continue;
+      return new Response("404 Not Found", { status: 404 });
     }
-
-    // Build a readable stream so the file doesn't have to be fully loaded into
-    // memory while we send it
-    const readableStream = file.readable;
-
-    // Build and send the response
-    const response = new Response(readableStream);
-    await requestEvent.respondWith(response);
-  }
 }
+
+serve(handler);
