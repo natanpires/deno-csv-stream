@@ -56,23 +56,17 @@ for await (const conn of server) {
 async function handleHttp(conn: Deno.Conn) {
   const httpConn = Deno.serveHttp(conn);
   for await (const requestEvent of httpConn) {
-    // Use the request pathname as filepath
-    const url = new URL(requestEvent.request.url);
-    const filepath = decodeURIComponent(url.pathname);
-
     // Try opening the file
     let file;
     try {
-        const file = await Deno.readFile(
+        const file = await Deno.open(
             "./PI_NY.GDP.MKTP.CD_DS2_en_csv_v2_4901850.csv",
+          { read: true }
         );
 
-        const stream: ReadableStream = readableStreamFromReader(
-            file,
-            { read: true }
-        );
+        const fsStream: ReadableStream = readableStreamFromReader(file);
 
-        stream.pipeThrough(new TextDecoderStream())
+        fsStream.pipeThrough(new TextDecoderStream())
             .pipeThrough(csvToJSON())
             .pipeTo(
                 new WritableStream({
@@ -89,7 +83,7 @@ async function handleHttp(conn: Deno.Conn) {
       continue;
     }
 
-        // Build a readable stream so the file doesn't have to be fully loaded into
+    // Build a readable stream so the file doesn't have to be fully loaded into
     // memory while we send it
     const readableStream = file.readable;
 
