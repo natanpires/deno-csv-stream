@@ -50,7 +50,7 @@ async function handler(_req) {
     // Try opening the file
     try {
       const file = await Deno.open(
-          "./PI_NY.GDP.MKTP.CD_DS2_en_csv_v2_4901850.csv",
+          "./API_NY.GDP.MKTP.CD_DS2_en_csv_v2_4901850.csv",
         { read: true }
       );
 
